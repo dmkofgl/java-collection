@@ -203,14 +203,110 @@ Notes:
 `javac` for compilation, `java` for running. IDEs (IntelliJ IDEA, Eclipse) provide richer tools. Build tools (Maven, Gradle)
 automate compiling, testing, packaging.
 
-- cmd\bash commands
-    - javac
-    - java
-    - jar
-- Build Tools
-    - maven
-    - gradle
-    - ant
+- Quick commands / examples
+
+```bash
+# Compile single file
+javac -d out src/com/example/Main.java
+
+# Compile whole module/source tree (with classpath)
+javac -d out -cp "lib/*" $(find src -name "*.java")
+
+# Run (with classpath)
+java -cp out:lib/* com.example.Main
+
+# Run with JVM options (memory, system properties)
+java -Xms256m -Xmx2g -Dconfig.file=prod.properties -cp out:lib/* com.example.Main
+
+# Enable assertions
+java -ea -cp out com.example.Main
+
+# Inspect bytecode / API
+javap -c -p com.example.Main
+```
+
+- Useful JDK tools
+  - `jshell` — REPL for quick experiments (Java 9+).
+  - `jlink` — create a custom runtime image (modular apps).
+  - `jpackage` — native installers for desktop apps (since JDK 14+ / incubating earlier).
+  - `jcmd`, `jstack`, `jmap`, `jinfo` — diagnostics (thread dumps, heap, JVM flags).
+  - `jstat` — GC and JVM statistics.
+  - `jdeps` — dependency analysis for JARs / modules.
+  - `jconsole`, `jvisualvm` — profiling and monitoring GUI tools.
+
+- JVM common runtime flags
+  - Memory: `-Xms<size>` (initial), `-Xmx<size>` (max).
+  - GC tuning: `-XX:+UseG1GC`, `-XX:+UseZGC` (JDK versions permitting), `-XX:MaxGCPauseMillis=200`.
+  - Diagnostics: `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heap.hprof`.
+  - System properties: `-Dname=value`.
+  - Debugging: `-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005`.
+
+- Creating and running JARs
+
+```bash
+# Create a simple JAR
+jar cfm app.jar MANIFEST.MF -C out/ .
+
+# Run an executable JAR
+java -jar app.jar
+
+# Create 'fat' or 'uber' JAR (example using Gradle/Maven/plugins)
+# For manual assembly, extract deps and jar together (not recommended long term)
+```
+
+  - Maven
+
+```bash
+mvn clean install        # compile, test, package, install to local repo
+mvn -DskipTests package  # package without running tests
+mvn test                 # run unit tests (Surefire/Failsafe)
+mvn dependency:tree     # view dependency graph
+```
+
+  - Gradle (wrapper recommended)
+
+```bash
+./gradlew build          # compile, test, assemble
+./gradlew test           # run tests
+./gradlew clean build
+./gradlew bootJar        # Spring Boot: build executable jar
+./gradlew dependencies  # view dependency graph
+```
+
+- IDE tips
+  - Set `JAVA_HOME` to the JDK installation used by the IDE and CI.
+  - Use IDE run configs to pass JVM args, system properties, and env vars.
+  - Use built-in debuggers (breakpoints, evaluate expressions) instead of `jdb` for faster workflow.
+
+- Testing & quality
+  - JUnit (5+) is the standard for unit tests; use Surefire (Maven) or the Gradle test task.
+  - Static analysis: `spotbugs`, `checkstyle`, `pmd`.
+  - Formatting: `google-java-format`, `spotless` (Gradle/Maven plugins).
+
+- CI / reproducibility
+  - Pin JDK version in CI (GitHub Actions, GitLab CI) and use build tool wrapper (`./gradlew`) or `mvn -B`.
+  - Cache dependency directories (Maven `.m2`, Gradle `.gradle`) for faster builds.
+
+- Troubleshooting
+  - Classpath errors: check `-cp` ordering and module-path vs classpath (modules reduce ambiguity).
+  - Version mismatch: ensure runtime JRE >= compiled target (javac `--release` or `-target`/`-source`).
+  - OutOfMemory: inspect heap with `jmap -dump:live,format=b,file=heap.hprof <pid>` and analyze with VisualVM or Eclipse MAT.
+
+- Where to get the JDK
+  - AdoptOpenJDK / Temurin, Oracle JDK, Amazon Corretto, Azul Zulu. Pick a distribution and version supported by your project.
+
+- Small examples to try
+
+```bash
+# Quick REPL
+jshell --startup DEFAULT
+
+# Run with remote debugging enabled
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -cp out com.example.Main
+
+# Create minimal runtime image (modular app)
+jlink --module-path $JAVA_HOME/jmods:mods --add-modules com.example --output custom-runtime
+```
 
 #### Classpath
 
@@ -816,9 +912,7 @@ TimerTask represents the task to run.
 
 ```java
 Timer timer = new Timer();
-timer.
-
-schedule(new TimerTask() {
+timer.schedule(new TimerTask() {
 	public void run () {
 		System.out.println("Task executed");
 	}
@@ -970,9 +1064,7 @@ import java.util.Locale;
 Locale locale = new Locale("fr", "FR");
 ResourceBundle bundle = ResourceBundle.getBundle("messages", locale);
 
-System.out.
-
-println(bundle.getString("greeting")); // Bonjour, {0} !
+System.out.println(bundle.getString("greeting")); // Bonjour, {0} !
 ```
 
 Hierarchy: messages_fr_FR → messages_fr → messages_en (default\system locale) → messages
@@ -985,9 +1077,7 @@ String pattern = bundle.getString("greeting");
 MessageFormat formatter = new MessageFormat(pattern, locale);
 String message = formatter.format(new Object[]{name});
 
-System.out.
-
-println(message); // Bonjour, Alice !
+System.out.println(message); // Bonjour, Alice !
 
 double amount = 1234567.89;
 
@@ -995,25 +1085,16 @@ Locale locale = Locale.GERMANY;
 NumberFormat currencyFmt = NumberFormat.getCurrencyInstance(locale);
 NumberFormat numberFmt = NumberFormat.getNumberInstance(locale);
 
-System.out.
-
-println(currencyFmt.format(amount)); // 1.234.567,89 €
-	System.out.
-
-println(numberFmt.format(amount));  // 1.234.567,89
-
+System.out.println(currencyFmt.format(amount)); // 1.234.567,89 €
+System.out.println(numberFmt.format(amount));  // 1.234.567,89
 
 Date now = new Date();
 
 DateFormat df = DateFormat.getDateInstance(DateFormat.FULL, Locale.FRANCE);
-System.out.
-
-println(df.format(now)); // vendredi 14 novembre 2025
+System.out.println(df.format(now)); // vendredi 14 novembre 2025
 // or java 8+
 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", Locale.FRANCE);
-System.out.
-
-println(dtf.format(LocalDateTime.now()));
+System.out.println(dtf.format(LocalDateTime.now()));
 
 ```
 
@@ -1021,14 +1102,10 @@ String comparison:
 
 ```java
 Collator collator = Collator.getInstance(Locale.GERMANY);
-collator.
-
-setStrength(Collator.PRIMARY);
+collator.setStrength(Collator.PRIMARY);
 
 int result = collator.compare("Äpfel", "apfel"); // considers Ä = A
-System.out.
-
-println(result); // 0 (equal at PRIMARY strength)
+System.out.println(result); // 0 (equal at PRIMARY strength)
 ```
 
 ### Serialization Support
@@ -1060,9 +1137,7 @@ class Person implements java.io.Serializable {
 	try(
 ObjectOutputStream oos = new ObjectOutputStream(
 	new FileOutputStream("person.ser"))){
-	oos.
-
-writeObject(new Person("Alice", 30));
+	oos.writeObject(new Person("Alice", 30));
 	}
 
 	try(
@@ -1133,4 +1208,145 @@ Terminal operations (return result)
 
 - **Lazy vs Terminal Ops**: Lazily compute results and optimize chains; terminal ops trigger processing (e.g., `collect`, `forEach`).
 
-##### Gatherer
+##### Stream terminal examples: `collect()` and `reduce()`
+
+Below are practical examples showing common `collect(...)` and `reduce(...)` patterns, with short explanations and expected outputs.
+
+Collect examples (preferred for mutable, container-style results)
+
+```java
+import java.util.*;
+import java.util.stream.*;
+import java.util.function.*;
+
+public class CollectExamples {
+    public static void main(String[] args) {
+        List<String> names = List.of("Alice", "Bob", "Carol", "Dave", "Eve");
+
+        // 1) Collect to a List
+        List<String> longNames = names.stream()
+            .filter(s -> s.length() > 3)
+            .collect(Collectors.toList());
+        // longNames -> [Alice, Carol, Dave]
+
+        // 2) Collect to a Set (deduplicates)
+        Set<String> nameSet = names.stream()
+            .map(String::toUpperCase)
+            .collect(Collectors.toSet());
+        // nameSet -> [ALICE, BOB, CAROL, DAVE, EVE]
+
+        // 3) Joining Strings
+        String joined = names.stream()
+            .collect(Collectors.joining(", ", "[", "]"));
+        // joined -> [Alice, Bob, Carol, Dave, Eve]
+
+        // 4) Grouping and downstream collectors
+        Map<Integer, List<String>> byLength = names.stream()
+            .collect(Collectors.groupingBy(String::length));
+        // byLength -> {3=[Bob, Eve], 4=[Dave], 5=[Alice, Carol]}
+
+        Map<Integer, Long> counts = names.stream()
+            .collect(Collectors.groupingBy(String::length, Collectors.counting()));
+        // counts -> {3=2, 4=1, 5=2}
+
+        // 5) ToMap with merge function (handles duplicate keys)
+        List<String> dupKeys = List.of("a", "bb", "ccc", "dd");
+        Map<Integer, String> merged = dupKeys.stream()
+            .collect(Collectors.toMap(
+                String::length,                    // key: length
+                Function.identity(),               // value: the string
+                (existing, replacement) -> existing + ";" + replacement // merge duplicates
+            ));
+        // merged -> {1="a", 2="bb;dd", 3="ccc"}
+
+        // 6) Summarizing / statistics
+        IntSummaryStatistics stats = names.stream()
+            .collect(Collectors.summarizingInt(String::length));
+        // stats.getCount()=5, getMin()=3, getMax()=5, getAverage()=3.8...
+
+        // 7) collectingAndThen - post-processing (e.g., make unmodifiable)
+        List<String> unmodifiable = names.stream()
+            .collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
+        // unmodifiable is an unmodifiable List
+
+        // 8) Partitioning (boolean-based grouping)
+        // Produces a Map<Boolean, List<T>>: true -> elements matching predicate, false -> others
+        Map<Boolean, List<String>> partitioned = names.stream()
+            .collect(Collectors.partitioningBy(s -> s.length() > 3));
+        // partitioned -> {false=[Bob, Eve], true=[Alice, Carol, Dave]}
+
+        // Partitioning with a downstream collector (e.g., counting)
+        Map<Boolean, Long> partitionCounts = names.stream()
+            .collect(Collectors.partitioningBy(s -> s.length() > 3, Collectors.counting()));
+        // partitionCounts -> {false=2, true=3}
+
+        // Print some outputs (simple smoke)
+        System.out.println("longNames=" + longNames);
+        System.out.println("joined=" + joined);
+        System.out.println("byLength=" + byLength);
+        System.out.println("counts=" + counts);
+        System.out.println("merged=" + merged);
+        System.out.println("stats=" + stats);
+        System.out.println("unmodifiable size=" + unmodifiable.size());
+    }
+}
+```
+
+Notes on `collect`:
+- Use `collect` (with `Collectors`) when you need to accumulate elements into mutable containers (List, Set, Map, StringBuilder, summary stats).
+- `Collectors` provides many useful factories: `toList()`, `toSet()`, `toMap()`, `joining()`, `groupingBy()`, `partitioningBy()`, `summarizingInt()`.
+- When using parallel streams, prefer collectors designed for parallelism (most builtin collectors are parallel-aware). Avoid mutating shared external state.
+
+
+Reduce examples (combine stream elements to a single value)
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class ReduceExamples {
+    public static void main(String[] args) {
+        List<Integer> nums = List.of(1, 2, 3, 4, 5);
+
+        // 1) Sum using identity + accumulator
+        int sum = nums.stream()
+            .reduce(0, Integer::sum); // identity 0 ensures a non-empty result
+        // sum -> 15
+
+        // 2) Sum as Optional (no identity)
+        Optional<Integer> sumOpt = nums.stream().reduce(Integer::sum);
+        // sumOpt.orElse(0) -> 15
+
+        // 3) Max via reduce
+        Optional<Integer> max = nums.stream().reduce(Integer::max);
+        // max.get() -> 5
+
+        // 4) String concatenation (non-associative formatting caution)
+        List<String> parts = List.of("a", "b", "c");
+        Optional<String> conc = parts.stream().reduce((a, b) -> a + ":" + b);
+        // conc -> Optional["a:b:c"]
+
+        // 5) Parallel reduction with combiner (identity, accumulator, combiner)
+        // accumulator must be associative and combiner merges partial results.
+        int parallelSum = nums.parallelStream()
+            .reduce(0,
+                (subtotal, element) -> subtotal + element, // accumulator
+                Integer::sum                                 // combiner
+            );
+        // parallelSum -> 15
+
+        // Print results
+        System.out.println("sum=" + sum);
+        System.out.println("sumOpt=" + sumOpt.orElse(-1));
+        System.out.println("max=" + max.orElse(-1));
+        conc.ifPresent(s -> System.out.println("conc=" + s));
+        System.out.println("parallelSum=" + parallelSum);
+    }
+}
+```
+
+Notes on `reduce`:
+- `reduce(identity, acc)` returns a value (identity used when stream is empty).
+- `reduce(acc)` returns Optional<T> and is useful when empty-stream is possible.
+- `reduce(identity, acc, combiner)` is used for parallel reductions; the accumulator and combiner must cooperate and be associative.
+- Prefer `collect` when building mutable results (collections, maps, StringBuilder) — `collect` is generally more efficient for those cases.
